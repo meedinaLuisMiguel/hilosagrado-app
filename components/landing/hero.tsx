@@ -16,9 +16,9 @@ export function Hero() {
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background with overlay */}
       <div 
-        className="absolute inset-0 bg-contain bg-center bg-no-repeat"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: 'url(https://abjmkxitujecmufprjbr.supabase.co/storage/v1/object/public/products/hslog.png)',
+          backgroundImage: 'url(https://picsum.photos/seed/hilo-sagrado-hero/1920/1080)',
         }}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background" />
@@ -53,13 +53,13 @@ export function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.6, ease: 'easeOut' }}
         >
-            <Button
+          <Button
             onClick={scrollToProducts}
             size="lg"
-            className="bg-primary hover:bg-primary/90 text-primary-foreground px- py-6 text-lg font-medium rounded-full shadow-lg hover:shadow-xl transition-all duration-300 mt-"
-            >
+            className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-6 text-lg font-medium rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+          >
             Ver Colección
-            </Button>
+          </Button>
         </motion.div>
 
         {/* Scroll indicator */}
