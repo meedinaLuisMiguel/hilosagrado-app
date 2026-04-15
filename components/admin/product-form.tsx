@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useTransition } from 'react'
+import { useState, useEffect, useTransition, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ImageIcon, Loader2 } from 'lucide-react'
+import { X, ImageIcon, Loader2, Upload } from 'lucide-react'
 import type { Product, Category } from '@/lib/types'
 import { categories } from '@/lib/types'
 import { createProduct, updateProduct } from '@/lib/actions/products'
@@ -28,6 +28,9 @@ interface ProductFormProps {
 export function ProductForm({ isOpen, onClose, product }: ProductFormProps) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState('')
+  const [uploadError, setUploadError] = useState('')
+  const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   
   const [formData, setFormData] = useState({
     name: '',
@@ -62,7 +65,63 @@ export function ProductForm({ isOpen, onClose, product }: ProductFormProps) {
       })
     }
     setError('')
+    setUploadError('')
   }, [product, isOpen])
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validar que sea una imagen
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Por favor selecciona una imagen válida')
+      return
+    }
+
+    // Validar tamaño (máximo 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError('La imagen debe ser menor a 5MB')
+      return
+    }
+
+    setIsUploading(true)
+    setUploadError('')
+
+    try {
+      const formDataToSend = new FormData()
+      formDataToSend.append('file', file)
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formDataToSend,
+      })
+
+      if (!response.ok) {
+        let errorMessage = 'Error al subir la imagen'
+        try {
+          const errorData = await response.json() as { error?: string }
+          if (errorData.error) {
+            errorMessage = errorData.error
+          }
+        } catch {
+          // Si no se puede parsear JSON, usar mensaje por defecto
+        }
+        throw new Error(errorMessage)
+      }
+
+      const data = await response.json() as { url: string }
+      setFormData(prev => ({ ...prev, image_url: data.url }))
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error al subir la imagen. Intenta de nuevo.'
+      setUploadError(errorMessage)
+      console.error('Upload error:', err)
+    } finally {
+      setIsUploading(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -139,10 +198,11 @@ export function ProductForm({ isOpen, onClose, product }: ProductFormProps) {
                 {/* Image Upload Section */}
                 <div className="space-y-2">
                   <Label>Imagen del Producto</Label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
-                    {formData.image_url ? (
+                  
+                  {formData.image_url ? (
+                    <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
                       <div className="space-y-3">
-                        <div className="w-24 h-24 mx-auto rounded-lg overflow-hidden bg-secondary">
+                        <div className="w-32 h-32 mx-auto rounded-lg overflow-hidden bg-secondary">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={formData.image_url}
@@ -150,35 +210,68 @@ export function ProductForm({ isOpen, onClose, product }: ProductFormProps) {
                             className="w-full h-full object-cover"
                           />
                         </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setFormData(prev => ({ ...prev, image_url: '' }))}
-                        >
-                          Cambiar imagen
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        <div className="w-12 h-12 mx-auto rounded-full bg-secondary flex items-center justify-center">
-                          <ImageIcon className="w-6 h-6 text-muted-foreground" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground mb-2">
-                            Ingresa la URL de la imagen
-                          </p>
-                          <Input
-                            type="url"
-                            placeholder="https://ejemplo.com/imagen.jpg"
-                            value={formData.image_url}
-                            onChange={handleImageUrlChange}
-                            className="max-w-xs mx-auto"
-                          />
+                        <div className="flex flex-col gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setFormData(prev => ({ ...prev, image_url: '' }))}
+                          >
+                            Cambiar imagen
+                          </Button>
                         </div>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* File Upload */}
+                      <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileSelect}
+                          className="hidden"
+                          disabled={isUploading}
+                        />
+                        <div className="space-y-3">
+                          <div className="w-12 h-12 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+                            <Upload className="w-6 h-6 text-primary" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-foreground mb-1">
+                              {isUploading ? 'Subiendo...' : 'Selecciona una imagen'}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Haz clic para seleccionar o arrastra un archivo
+                            </p>
+                          </div>
+                          {isUploading && (
+                            <div className="flex items-center justify-center">
+                              <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* URL Input */}
+                      <div className="space-y-2">
+                        <p className="text-xs text-muted-foreground text-center">O ingresa la URL de una imagen</p>
+                        <Input
+                          type="url"
+                          placeholder="https://ejemplo.com/imagen.jpg"
+                          value={formData.image_url}
+                          onChange={handleImageUrlChange}
+                        />
+                      </div>
+
+                      {uploadError && (
+                        <p className="text-xs text-destructive text-center">{uploadError}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Name */}
