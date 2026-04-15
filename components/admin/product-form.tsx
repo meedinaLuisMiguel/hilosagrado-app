@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Upload, ImageIcon, Loader2 } from 'lucide-react'
-import { useStore } from '@/lib/store'
-import { Product, Category, categories } from '@/lib/data'
+import { X, ImageIcon, Loader2 } from 'lucide-react'
+import type { Product, Category } from '@/lib/types'
+import { categories } from '@/lib/types'
+import { createProduct, updateProduct } from '@/lib/actions/products'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -25,17 +26,16 @@ interface ProductFormProps {
 }
 
 export function ProductForm({ isOpen, onClose, product }: ProductFormProps) {
-  const { addProduct, updateProduct } = useStore()
-  const [isLoading, setIsLoading] = useState(false)
+  const [isPending, startTransition] = useTransition()
+  const [error, setError] = useState('')
   
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     price: '',
     category: 'accesorios' as Category,
-    image: '',
-    isNew: false,
-    isFeatured: false,
+    image_url: '',
+    featured: false,
     available: true,
   })
 
@@ -43,12 +43,11 @@ export function ProductForm({ isOpen, onClose, product }: ProductFormProps) {
     if (product) {
       setFormData({
         name: product.name,
-        description: product.description,
+        description: product.description || '',
         price: product.price.toString(),
         category: product.category,
-        image: product.image,
-        isNew: product.isNew,
-        isFeatured: product.isFeatured,
+        image_url: product.image_url || '',
+        featured: product.featured,
         available: product.available,
       })
     } else {
@@ -57,44 +56,46 @@ export function ProductForm({ isOpen, onClose, product }: ProductFormProps) {
         description: '',
         price: '',
         category: 'accesorios',
-        image: '',
-        isNew: false,
-        isFeatured: false,
+        image_url: '',
+        featured: false,
         available: true,
       })
     }
+    setError('')
   }, [product, isOpen])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
-
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 800))
+    setError('')
 
     const productData = {
       name: formData.name,
-      description: formData.description,
+      description: formData.description || null,
       price: parseInt(formData.price) || 0,
       category: formData.category,
-      image: formData.image || `https://picsum.photos/seed/${Date.now()}/400/400`,
-      isNew: formData.isNew,
-      isFeatured: formData.isFeatured,
+      image_url: formData.image_url || null,
+      featured: formData.featured,
       available: formData.available,
     }
 
-    if (product) {
-      updateProduct(product.id, productData)
-    } else {
-      addProduct(productData)
-    }
+    startTransition(async () => {
+      let result
+      if (product) {
+        result = await updateProduct(product.id, productData)
+      } else {
+        result = await createProduct(productData)
+      }
 
-    setIsLoading(false)
-    onClose()
+      if (result.success) {
+        onClose()
+      } else {
+        setError(result.error || 'Error al guardar el producto')
+      }
+    })
   }
 
   const handleImageUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({ ...prev, image: e.target.value }))
+    setFormData(prev => ({ ...prev, image_url: e.target.value }))
   }
 
   return (
@@ -139,12 +140,12 @@ export function ProductForm({ isOpen, onClose, product }: ProductFormProps) {
                 <div className="space-y-2">
                   <Label>Imagen del Producto</Label>
                   <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
-                    {formData.image ? (
+                    {formData.image_url ? (
                       <div className="space-y-3">
                         <div className="w-24 h-24 mx-auto rounded-lg overflow-hidden bg-secondary">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
-                            src={formData.image}
+                            src={formData.image_url}
                             alt="Preview"
                             className="w-full h-full object-cover"
                           />
@@ -153,7 +154,7 @@ export function ProductForm({ isOpen, onClose, product }: ProductFormProps) {
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={() => setFormData(prev => ({ ...prev, image: '' }))}
+                          onClick={() => setFormData(prev => ({ ...prev, image_url: '' }))}
                         >
                           Cambiar imagen
                         </Button>
@@ -165,12 +166,12 @@ export function ProductForm({ isOpen, onClose, product }: ProductFormProps) {
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground mb-2">
-                            Arrastra una imagen o ingresa la URL
+                            Ingresa la URL de la imagen
                           </p>
                           <Input
                             type="url"
                             placeholder="https://ejemplo.com/imagen.jpg"
-                            value={formData.image}
+                            value={formData.image_url}
                             onChange={handleImageUrlChange}
                             className="max-w-xs mx-auto"
                           />
@@ -201,7 +202,6 @@ export function ProductForm({ isOpen, onClose, product }: ProductFormProps) {
                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                     placeholder="Describe la pieza, sus materiales y significado..."
                     rows={3}
-                    required
                   />
                 </div>
 
@@ -244,27 +244,14 @@ export function ProductForm({ isOpen, onClose, product }: ProductFormProps) {
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
                     <Checkbox
-                      id="isNew"
-                      checked={formData.isNew}
+                      id="featured"
+                      checked={formData.featured}
                       onCheckedChange={(checked) => 
-                        setFormData(prev => ({ ...prev, isNew: checked as boolean }))
+                        setFormData(prev => ({ ...prev, featured: checked as boolean }))
                       }
                     />
-                    <Label htmlFor="isNew" className="cursor-pointer">
-                      Marcar como nuevo
-                    </Label>
-                  </div>
-                  
-                  <div className="flex items-center gap-3">
-                    <Checkbox
-                      id="isFeatured"
-                      checked={formData.isFeatured}
-                      onCheckedChange={(checked) => 
-                        setFormData(prev => ({ ...prev, isFeatured: checked as boolean }))
-                      }
-                    />
-                    <Label htmlFor="isFeatured" className="cursor-pointer">
-                      Destacar en &quot;Lo más visto&quot;
+                    <Label htmlFor="featured" className="cursor-pointer">
+                      Destacar producto
                     </Label>
                   </div>
                   
@@ -281,6 +268,10 @@ export function ProductForm({ isOpen, onClose, product }: ProductFormProps) {
                     </Label>
                   </div>
                 </div>
+
+                {error && (
+                  <p className="text-sm text-destructive text-center">{error}</p>
+                )}
               </div>
 
               {/* Actions */}
@@ -290,16 +281,16 @@ export function ProductForm({ isOpen, onClose, product }: ProductFormProps) {
                   variant="outline"
                   onClick={onClose}
                   className="flex-1"
-                  disabled={isLoading}
+                  disabled={isPending}
                 >
                   Cancelar
                 </Button>
                 <Button
                   type="submit"
                   className="flex-1 bg-primary hover:bg-primary/90"
-                  disabled={isLoading}
+                  disabled={isPending}
                 >
-                  {isLoading ? (
+                  {isPending ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       Guardando...

@@ -2,7 +2,8 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
-import { Category, categories, getCategoryName } from '@/lib/data'
+import type { Category } from '@/lib/types'
+import { categories, getCategoryName } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 
 interface CategoryFilterProps {

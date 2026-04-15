@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Product } from '@/lib/data'
+import type { Product } from '@/lib/types'
 import { ProductCard } from './product-card'
 
 interface ProductSectionProps {

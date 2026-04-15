@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion'
 import Image from 'next/image'
-import { categories, Category } from '@/lib/data'
+import { categories, type Category } from '@/lib/types'
 
 interface CategoriesProps {
   onCategorySelect: (category: Category) => void
