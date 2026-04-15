@@ -2,7 +2,8 @@
 
 import { motion } from 'framer-motion'
 import Image from 'next/image'
-import { Product, formatPrice, getCategoryName } from '@/lib/data'
+import type { Product } from '@/lib/types'
+import { formatPrice, getCategoryName } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 
 interface ProductCardProps {
@@ -26,7 +27,7 @@ export function ProductCard({ product, onClick, index = 0 }: ProductCardProps) {
         {/* Image Container */}
         <div className="relative aspect-square overflow-hidden">
           <Image
-            src={product.image}
+            src={product.image_url || '/placeholder.jpg'}
             alt={product.name}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-105"
@@ -35,9 +36,9 @@ export function ProductCard({ product, onClick, index = 0 }: ProductCardProps) {
           
           {/* Badges */}
           <div className="absolute top-3 left-3 flex flex-col gap-2">
-            {product.isNew && (
+            {product.featured && (
               <Badge className="bg-primary text-primary-foreground text-xs">
-                Nuevo
+                Destacado
               </Badge>
             )}
             {!product.available && (

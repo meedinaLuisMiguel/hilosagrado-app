@@ -3,7 +3,8 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import { X, Instagram } from 'lucide-react'
-import { Product, formatPrice, getCategoryName } from '@/lib/data'
+import type { Product } from '@/lib/types'
+import { formatPrice, getCategoryName } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 
@@ -50,7 +51,7 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
               {/* Image */}
               <div className="relative w-full sm:w-1/2 aspect-square sm:aspect-auto sm:min-h-[400px] flex-shrink-0">
                 <Image
-                  src={product.image}
+                  src={product.image_url || '/placeholder.jpg'}
                   alt={product.name}
                   fill
                   className="object-cover"
@@ -59,9 +60,9 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
                 
                 {/* Badges */}
                 <div className="absolute top-4 left-4 flex flex-col gap-2">
-                  {product.isNew && (
+                  {product.featured && (
                     <Badge className="bg-primary text-primary-foreground">
-                      Nuevo
+                      Destacado
                     </Badge>
                   )}
                   {!product.available && (
