@@ -2,12 +2,11 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
-import type { Category } from '@/lib/types'
-import { categories, getCategoryName } from '@/lib/types'
+import { categories } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 
 interface CategoryFilterProps {
-  selectedCategory: Category | null
+  selectedCategory: number | null
   onClear: () => void
 }
 
@@ -28,7 +27,7 @@ export function CategoryFilter({ selectedCategory, onClear }: CategoryFilterProp
               <div className="flex items-center gap-3">
                 <span className="text-sm text-muted-foreground">Mostrando:</span>
                 <span className="font-serif font-semibold text-foreground">
-                  {getCategoryName(selectedCategory)}
+                  {category.name}
                 </span>
               </div>
               <Button

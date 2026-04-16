@@ -51,7 +51,7 @@ export function ProductCard({ product, onClick, index = 0 }: ProductCardProps) {
           {/* Category Badge */}
           <div className="absolute bottom-3 right-3">
             <Badge variant="outline" className="bg-background/90 text-foreground text-xs border-border">
-              {getCategoryName(product.category)}
+              {getCategoryName(product.category_id)}
             </Badge>
           </div>
         </div>

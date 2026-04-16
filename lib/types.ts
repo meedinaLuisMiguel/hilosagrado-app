@@ -1,51 +1,74 @@
-// Types for Supabase tables
+// lib/types.ts
 
-export type Category = 'mascotas' | 'mama' | 'accesorios'
+export interface Category {
+  id: number
+  name: string
+  description: string
+  image: string
+}
+
+export interface CategoryData {
+  id: number
+  name: string
+  description: string | null
+  image: string | null
+}
+
+// Categorías estáticas con imágenes para la landing page
+export const categories: Category[] = [
+  {
+    id: 1,
+    name: 'Mascotas',
+    description: 'Joyería y accesorios para amantes de mascotas',
+    image: '/placeholder.jpg',
+  },
+  {
+    id: 2,
+    name: 'Mamá',
+    description: 'Regalos especiales para mamás',
+    image: '/placeholder.jpg',
+  },
+  {
+    id: 3,
+    name: 'Accesorios',
+    description: 'Joyería bohemia y accesorios',
+    image: '/placeholder.jpg',
+  },
+]
 
 export interface Product {
   id: string
   name: string
   description: string | null
   price: number
-  category: Category
+  category_id: number // Coincide con tu esquema
   image_url: string | null
+  is_new: boolean // Coincide con tu esquema
+  is_featured: boolean // Coincide con tu esquema
   available: boolean
-  featured: boolean
-  views: number
   created_at: string
-  updated_at: string
 }
 
 export interface ProductInsert {
   name: string
   description?: string | null
   price: number
-  category: Category
+  category_id: number
   image_url?: string | null
+  is_new?: boolean
+  is_featured?: boolean
   available?: boolean
-  featured?: boolean
 }
 
 export interface ProductUpdate {
   name?: string
   description?: string | null
   price?: number
-  category?: Category
+  category_id?: number
   image_url?: string | null
+  is_new?: boolean
+  is_featured?: boolean
   available?: boolean
-  featured?: boolean
-}
-
-// Category info for display
-export const categories: { id: Category; name: string; description: string; image: string }[] = [
-  { id: 'mascotas', name: 'Mascotas', description: 'Collares y accesorios para tus compañeros peludos', image: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=600&h=800&fit=crop' },
-  { id: 'mama', name: 'Para Mamá', description: 'Piezas especiales para celebrar a mamá', image: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=600&h=800&fit=crop' },
-  { id: 'accesorios', name: 'Accesorios', description: 'Aretes, pulseras y más para ti', image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=600&h=800&fit=crop' },
-]
-
-export function getCategoryName(category: Category): string {
-  const cat = categories.find(c => c.id === category)
-  return cat?.name || category
 }
 
 export function formatPrice(price: number): string {
@@ -55,4 +78,18 @@ export function formatPrice(price: number): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(price)
+}
+
+export function getCategoryName(categoryId: number | undefined | null, dynamicCategories?: CategoryData[]): string {
+  if (!categoryId) return 'Sin categoría'
+  
+  // Si se proporcionan categorías dinámicas, usarlas
+  if (dynamicCategories && dynamicCategories.length > 0) {
+    const found = dynamicCategories.find(cat => cat.id === categoryId)
+    if (found) return found.name
+  }
+  
+  // Si no, usar las categorías estáticas
+  const staticCategory = categories.find(cat => cat.id === categoryId)
+  return staticCategory?.name || 'Sin categoría'
 }

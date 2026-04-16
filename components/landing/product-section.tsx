@@ -15,8 +15,28 @@ interface ProductSectionProps {
 export function ProductSection({ id, title, subtitle, products, onProductClick }: ProductSectionProps) {
   if (products.length === 0) return null
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.08,
+        delayChildren: 0.1,
+      },
+    },
+  }
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.6, ease: 'easeOut' },
+    },
+  }
+
   return (
-    <section id={id} className="py-16 sm:py-20 px-4">
+    <section id={id} className="relative py-16 sm:py-24 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Section Header */}
         <motion.div
@@ -24,29 +44,41 @@ export function ProductSection({ id, title, subtitle, products, onProductClick }
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-12"
+          className="text-center mb-12 sm:mb-16"
         >
-          <h2 className="font-serif text-3xl sm:text-4xl font-bold text-foreground mb-3">
+          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-3">
             {title}
           </h2>
           {subtitle && (
-            <p className="text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-muted-foreground max-w-2xl mx-auto text-base sm:text-lg">
               {subtitle}
             </p>
           )}
         </motion.div>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: '-100px' }}
+          className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6"
+        >
           {products.map((product, index) => (
-            <ProductCard
+            <motion.div
               key={product.id}
-              product={product}
-              onClick={() => onProductClick(product)}
-              index={index}
-            />
+              variants={itemVariants}
+              whileHover={{ y: -4 }}
+              transition={{ duration: 0.3 }}
+            >
+              <ProductCard
+                product={product}
+                onClick={() => onProductClick(product)}
+                index={index}
+              />
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   )

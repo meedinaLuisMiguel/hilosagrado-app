@@ -76,7 +76,7 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
               {/* Content */}
               <div className="p-6 sm:p-8 flex flex-col flex-1">
                 <Badge variant="outline" className="w-fit mb-3 border-border text-muted-foreground">
-                  {getCategoryName(product.category)}
+                  {getCategoryName(product.category_id)}
                 </Badge>
 
                 <h2 className="font-serif text-2xl sm:text-3xl font-bold text-foreground mb-4">

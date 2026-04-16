@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import type { Product, Category } from '@/lib/types'
+import type { Product, CategoryData } from '@/lib/types'
+import { Header } from '@/components/landing/header'
 import { Hero } from '@/components/landing/hero'
+import { FeaturedSection } from '@/components/landing/featured-section'
 import { ProductSection } from '@/components/landing/product-section'
 import { Categories } from '@/components/landing/categories'
 import { CategoryFilter } from '@/components/landing/category-filter'
@@ -13,41 +15,32 @@ interface LandingPageProps {
   products: Product[]
   newProducts: Product[]
   featuredProducts: Product[]
+  categories: CategoryData[]
 }
 
-export function LandingPage({ products, newProducts, featuredProducts }: LandingPageProps) {
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
+export function LandingPage({ products, newProducts, featuredProducts, categories }: LandingPageProps) {
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  const displayNewProducts = useMemo(() => {
-    if (selectedCategory) {
-      return newProducts.filter(p => p.category === selectedCategory)
-    }
-    return newProducts
-  }, [newProducts, selectedCategory])
-
-  const displayFeaturedProducts = useMemo(() => {
-    if (selectedCategory) {
-      return featuredProducts.filter(p => p.category === selectedCategory)
-    }
-    return featuredProducts
-  }, [featuredProducts, selectedCategory])
-
   const filteredProducts = useMemo(() => {
     if (selectedCategory) {
-      return products.filter(p => p.category === selectedCategory)
+      return products.filter(p => p.category_id === selectedCategory)
     }
     return null
   }, [products, selectedCategory])
+
+  const categoryName = useMemo(() => {
+    return categories.find(c => c.id === selectedCategory)?.name || 'Colección'
+  }, [selectedCategory, categories])
 
   const handleProductClick = (product: Product) => {
     setSelectedProduct(product)
     setIsModalOpen(true)
   }
 
-  const handleCategorySelect = (category: Category) => {
-    setSelectedCategory(category)
+  const handleCategorySelect = (categoryId: number) => {
+    setSelectedCategory(categoryId)
     setTimeout(() => {
       const element = document.getElementById('productos-filtrados')
       if (element) {
@@ -62,6 +55,8 @@ export function LandingPage({ products, newProducts, featuredProducts }: Landing
 
   return (
     <main className="min-h-screen bg-background">
+      <Header />
+      
       <Hero />
 
       <CategoryFilter 
@@ -72,7 +67,7 @@ export function LandingPage({ products, newProducts, featuredProducts }: Landing
       {selectedCategory && filteredProducts && (
         <ProductSection
           id="productos-filtrados"
-          title={selectedCategory === 'mascotas' ? 'Mascotas' : selectedCategory === 'mama' ? 'Para Mamá' : 'Accesorios'}
+          title={categoryName}
           subtitle="Explora todos los productos de esta categoría"
           products={filteredProducts}
           onProductClick={handleProductClick}
@@ -81,21 +76,21 @@ export function LandingPage({ products, newProducts, featuredProducts }: Landing
 
       {!selectedCategory && (
         <>
-          <ProductSection
+          <FeaturedSection
             id="lo-mas-nuevo"
             title="Lo Más Nuevo"
             subtitle="Descubre las últimas creaciones hechas con amor y dedicación"
-            products={displayNewProducts}
+            products={newProducts}
             onProductClick={handleProductClick}
           />
 
-          <Categories onCategorySelect={handleCategorySelect} />
+          <Categories onCategorySelect={handleCategorySelect} categories={categories} />
 
           <ProductSection
             id="lo-mas-visto"
             title="Lo Más Visto"
             subtitle="Las piezas favoritas de nuestra comunidad"
-            products={displayFeaturedProducts}
+            products={featuredProducts}
             onProductClick={handleProductClick}
           />
         </>

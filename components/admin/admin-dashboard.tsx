@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { 
@@ -15,9 +15,10 @@ import {
   Loader2
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import type { Product, Category } from '@/lib/types'
-import { categories, formatPrice, getCategoryName } from '@/lib/types'
+import type { Product, CategoryData } from '@/lib/types'
+import { formatPrice, getCategoryName } from '@/lib/types'
 import { deleteProduct, toggleProductAvailability } from '@/lib/actions/products'
+import { getCategories } from '@/lib/actions/categories'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ProductForm } from '@/components/admin/product-form'
@@ -33,10 +34,16 @@ export function AdminDashboard({ initialProducts }: AdminDashboardProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [products, setProducts] = useState(initialProducts)
+  const [categoriesList, setCategoriesList] = useState<CategoryData[]>([])
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null)
-  const [filterCategory, setFilterCategory] = useState<Category | 'all'>('all')
+  const [filterCategory, setFilterCategory] = useState<number | 'all'>('all')
+
+  // Cargar categorías dinámicas al montar el componente
+  useEffect(() => {
+    getCategories().then(setCategoriesList)
+  }, [])
 
   const handleLogout = async () => {
     const supabase = createClient()
@@ -77,7 +84,7 @@ export function AdminDashboard({ initialProducts }: AdminDashboardProps) {
 
   const filteredProducts = filterCategory === 'all' 
     ? products 
-    : products.filter(p => p.category === filterCategory)
+    : products.filter(p => p.category_id === filterCategory)
 
   return (
     <div className="min-h-screen bg-background">
@@ -189,7 +196,7 @@ export function AdminDashboard({ initialProducts }: AdminDashboardProps) {
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">
-                  {products.filter(p => p.featured).length}
+                  {products.filter(p => p.is_featured).length}
                 </p>
                 <p className="text-xs text-muted-foreground">Destacados</p>
               </div>
@@ -208,7 +215,7 @@ export function AdminDashboard({ initialProducts }: AdminDashboardProps) {
             >
               Todos
             </Button>
-            {categories.map(cat => (
+            {categoriesList.map(cat => (
               <Button
                 key={cat.id}
                 variant={filterCategory === cat.id ? 'default' : 'outline'}
@@ -275,7 +282,7 @@ export function AdminDashboard({ initialProducts }: AdminDashboardProps) {
                       </div>
                     </td>
                     <td className="p-4">
-                      <Badge variant="outline">{getCategoryName(product.category)}</Badge>
+                      <Badge variant="outline">{getCategoryName(product.category_id, categoriesList)}</Badge>
                     </td>
                     <td className="p-4 font-medium text-foreground">
                       {formatPrice(product.price)}
@@ -291,8 +298,11 @@ export function AdminDashboard({ initialProducts }: AdminDashboardProps) {
                             Agotado
                           </Badge>
                         )}
-                        {product.featured && (
+                        {product.is_featured && (
                           <Badge className="bg-primary/10 text-primary">Destacado</Badge>
+                        )}
+                        {product.is_new && (
+                          <Badge className="bg-blue-500/10 text-blue-700">Nuevo</Badge>
                         )}
                       </div>
                     </td>
@@ -392,13 +402,15 @@ export function AdminDashboard({ initialProducts }: AdminDashboardProps) {
                         </Button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Badge variant="outline" className="text-xs">{getCategoryName(product.category)}</Badge>
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
+                      <Badge variant="outline" className="text-xs">{getCategoryName(product.category_id, categoriesList)}</Badge>
                       {product.available ? (
                         <Badge className="bg-green-500/10 text-green-700 text-xs">Disponible</Badge>
                       ) : (
                         <Badge variant="secondary" className="bg-orange-500/10 text-orange-700 text-xs">Agotado</Badge>
                       )}
+                      {product.is_featured && <Badge className="bg-primary/10 text-primary text-xs">Destacado</Badge>}
+                      {product.is_new && <Badge className="bg-blue-500/10 text-blue-700 text-xs">Nuevo</Badge>}
                     </div>
                   </div>
                 </div>
